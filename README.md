@@ -20,7 +20,7 @@ This allows you to install the XignCode Bypasser easily.
 
 Do a file repair (after you login)
 
-## When I try to run, I get <xyz>
+## When I try to run, I get `<xyz>`
 
 If you have any issues, don't hesitate to contact me (@cupid.rips.hearts#3337) on the BnS Buddy Discord server, in the `#support` channel.
 
