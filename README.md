@@ -1,2 +1,3 @@
-# xgb-installer
-XignCode Bypasser installer for Blade &amp; Soul
+# XignCode Bypasser installer for Blade &amp; Soul
+
+This allows you to install the XignCode Bypasser easily.
