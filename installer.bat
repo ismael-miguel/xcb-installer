@@ -9,7 +9,7 @@ REM needs administrator rights
 REM we run net session to check the error returned
 net session > NUL 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
-    call :kill 1 "You need to execute this as administrator"
+    call :kill 1 "You need to execute as administrator"
 )
 
 REM this key is required
@@ -19,11 +19,17 @@ IF NOT %ERRORLEVEL% EQU 0 (
     call :kill 1 "Registry key not found"
 )
 
+REM checks if the game is running | https://stackoverflow.com/a/1329790
+tasklist /FI "WINDOWTITLE eq Blade & Soul" 2>NUL | find /I /N "Client.exe">NUL
+IF %ERRORLEVEL% EQU 0 (
+    call :kill 1 "Close the game before installing the Xigncode Bypasser"
+)
+
 REM fetches the data in the registry
 for /f "tokens=2*" %%a in ('REG QUERY !REGKEY! /v BaseDir') do set "AppPath=%%~b\"
 
 REM ready to replace everything
-echo This will install the XignCode Bypasser.
+echo This will install the XignCode Bypasser
 echo --------------------------------------------------------------------------------
 echo Game installation: !AppPath!
 echo Executing from: !CALLPATH!
