@@ -6,7 +6,7 @@ If your system is 32 bits, it will skip installing the 64 bits version, to reduc
 Since this copies the files (instead of moving), applying the XignCode Bypasser later on doesn't require re-downloading the files.
 
 ## Requirements
-- Make sure the game is installed in a path existing in the registry key `HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\NCWest\BnS` (value `BaseDir`)
+- Make sure the game is installed in a path existing in the registry key `HKEY_LOCAL_MACHINE\SOFTWARE\NCWest\BnS` or `HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\NCWest\BnS` (value `BaseDir`)
 - Make sure it is NOT in a network shared folder! **IT WON'T WORK!**
 - Make sure you can have Administrator (Windows Vista and up) access before you try to run this code.
 
