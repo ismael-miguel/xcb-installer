@@ -5,21 +5,21 @@ setlocal EnableDelayedExpansion
 set CALLPATH=%~dp0
 set REGKEY="HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\NCWest\BnS"
 
-REM needs administrator rights
+REM needs administrator rights - https://stackoverflow.com/a/38856823
 REM we run net session to check the error returned
 net session > NUL 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
     call :kill 1 "You need to execute as administrator"
 )
 
-REM this key is required
+REM this key is required - https://stackoverflow.com/a/445323
 REM we check if it exists before trying to run the code
 REG QUERY !REGKEY! > NUL 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
     call :kill 1 "Registry key not found"
 )
 
-REM checks if the game is running | https://stackoverflow.com/a/1329790
+REM checks if the game is running - https://stackoverflow.com/a/1329790
 tasklist /FI "WINDOWTITLE eq Blade & Soul" 2>NUL | find /I /N "Client.exe">NUL
 IF %ERRORLEVEL% EQU 0 (
     call :kill 1 "Close the game before installing the Xigncode Bypasser"
@@ -38,11 +38,28 @@ IF NOT EXIST "!AppPath!*" (
 )
 call :pause "If you wish to continue, press any key. Otherwise, close this window."
 
-REM call the patching function
-for %%b in (32,64) do call :patch %%b
+REM list of bitnesses to patch for
+set list=32,64
+
+REM detect the bitness and ask to install for 64-bits on 32-bit systems - https://superuser.com/a/268384
+echo %PROCESSOR_ARCHITECTURE% | find /i "x86" > nul
+IF %ERRORLEVEL% EQU 0 (
+	echo --------------------------------------------------------------------------------
+	echo Detected 32 bit Windows installation
+	choice /c yn /n /m "Install the bypasser for 64 bits anyway? y/n"
+	IF ERRORLEVEL 2 (
+		set list=32
+	)
+)
 
 echo --------------------------------------------------------------------------------
-echo The XignCode Bypasser was successfully installed
+echo Installing bypasser for these bitnesses: !list!
+
+REM call the patching function
+for %%b in (!list!) do call :patch %%b
+
+echo --------------------------------------------------------------------------------
+echo The XignCode Bypasser was successfully installed!
 call :kill 0 "More in http://bnsbuddy.com/ and https://www.reddit.com/r/BladeAndSoulMods/"
 
 REM FUNCTION DECLARATION!
