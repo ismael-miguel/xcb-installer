@@ -1,7 +1,7 @@
 # XignCode Bypasser installer for Blade &amp; Soul
 
 This allows you to install the XignCode Bypasser easily, without having to navigate all over the folders.
-If your system is 32 bits, it will ask you if you want to skip installing the 64 bits version, to reduce the work needed.
+If your system is 32 bits, it will skip installing the 64 bits version, to reduce the work needed.
 
 Since this copies the files (instead of moving), applying the XignCode Bypasser later on doesn't require re-downloading the files.
 
