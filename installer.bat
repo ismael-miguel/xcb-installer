@@ -3,6 +3,7 @@
 REM config
 setlocal EnableDelayedExpansion
 set CALLPATH=%~dp0
+set WIN_BITS=64
 set REGKEY="HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\NCWest\BnS"
 
 REM needs administrator rights - https://stackoverflow.com/a/38856823
@@ -12,11 +13,18 @@ IF NOT %ERRORLEVEL% EQU 0 (
     call :kill 1 "You need to execute as administrator"
 )
 
+REM detect the bitness and fixes values - https://superuser.com/a/268384
+echo %PROCESSOR_ARCHITECTURE% | find /i "x86" > nul
+IF %ERRORLEVEL% EQU 0 (
+	set WIN_BITS=32
+	set REGKEY="HKEY_LOCAL_MACHINE\SOFTWARE\NCWest\BnS"
+)
+
 REM this key is required - https://stackoverflow.com/a/445323
 REM we check if it exists before trying to run the code
 REG QUERY !REGKEY! > NUL 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
-    call :kill 1 "Registry key not found"
+    call :kill 1 "Registry key !REGKEY! not found"
 )
 
 REM checks if the game is running - https://stackoverflow.com/a/1329790
@@ -32,31 +40,21 @@ REM ready to replace everything
 echo This will install the XignCode Bypasser
 echo --------------------------------------------------------------------------------
 echo Game installation: !AppPath!
-echo Executing from: !CALLPATH!
 IF NOT EXIST "!AppPath!*" (
 	call :kill 1 "!AppPath! doesn't exist or is empty"
 )
+echo Executing from: !CALLPATH!
+echo Detected !WIN_BITS! bit Windows installation
 call :pause "If you wish to continue, press any key. Otherwise, close this window."
 
-REM list of bitnesses to patch for
-set list=32,64
-
-REM detect the bitness and ask to install for 64-bits on 32-bit systems - https://superuser.com/a/268384
-echo %PROCESSOR_ARCHITECTURE% | find /i "x86" > nul
-IF %ERRORLEVEL% EQU 0 (
-	echo --------------------------------------------------------------------------------
-	echo Detected 32 bit Windows installation
-	choice /c yn /n /m "Install the bypasser for 64 bits anyway? y/n"
-	IF ERRORLEVEL 2 (
-		set list=32
-	)
-)
-
 echo --------------------------------------------------------------------------------
-echo Installing bypasser for these bitnesses: !list!
 
 REM call the patching function
-for %%b in (!list!) do call :patch %%b
+for %%b in (32,64) do (
+	IF %%b LEQ !WIN_BITS! (
+		call :patch %%b
+	)
+)
 
 echo --------------------------------------------------------------------------------
 echo The XignCode Bypasser was successfully installed!
