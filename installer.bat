@@ -62,7 +62,16 @@ call :kill 0 "More in http://bnsbuddy.com/ and https://www.reddit.com/r/BladeAnd
 
 REM FUNCTION DECLARATION!
 
+:getfolder
+REM fetches a folder path
+setlocal EnableDelayedExpansion
+set "cmd="(new-object -COM 'Shell.Application').BrowseForFolder(0,'Please choose a folder.',0,0).self.path""
+for /f "usebackq delims=" %%I in (`powershell -NoProfile %cmd%`) do set "folder=%%I"
+endlocal & set "getfolder=%folder%"
+goto :eof
+
 :pause
+setlocal EnableDelayedExpansion
 REM handles the pausing
 set a=%1
 echo !a:"=!
@@ -70,6 +79,7 @@ pause >nul
 goto :eof
 
 :kill
+setlocal EnableDelayedExpansion
 REM creates the exit messages
 IF NOT [%2] EQU [] (
 	set a=%2
@@ -80,6 +90,7 @@ exit %1
 goto :eof
 
 :patch
+setlocal EnableDelayedExpansion
 REM function to handle the patching
 set bits=%1
 set folder=!CALLPATH!!bits!\
@@ -87,7 +98,7 @@ set dll=bsengine_Shipping
 set target=!AppPath!\bin
 
 IF NOT !bits! EQU 32 (
-	REM 64bit (or, if it ever exists for consumers, 128bit) paths need treatment -.-
+	REM 64bit paths need treatment -.-
 	set dll=!dll!!bits!
 	set target=!target!!bits!
 )
