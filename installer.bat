@@ -1,5 +1,9 @@
 @echo off
 
+REM set the title - https://stackoverflow.com/a/39329524
+title XignCode Bypasser installer
+color 07
+
 REM config
 setlocal EnableDelayedExpansion
 set CALLPATH=%~dp0
@@ -10,7 +14,7 @@ REM needs administrator rights - https://stackoverflow.com/a/38856823
 REM we run net session to check the error returned
 net session > NUL 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
-    call :kill 1 "You need to execute as administrator"
+	call :kill 1 "You need to execute as administrator"
 )
 
 REM detect the bitness and fixes values - https://superuser.com/a/268384
@@ -20,78 +24,159 @@ IF %ERRORLEVEL% EQU 0 (
 	set REGKEY="HKEY_LOCAL_MACHINE\SOFTWARE\NCWest\BnS"
 )
 
+REM checks if the game is running - https://stackoverflow.com/a/1329790
+tasklist /FI "WINDOWTITLE eq Blade & Soul" 2>NUL | find /I /N "Client.exe">NUL
+IF %ERRORLEVEL% EQU 0 (
+	call :kill 1 "Close the game before installing the Xigncode Bypasser"
+)
+
 REM this key is required - https://stackoverflow.com/a/445323
 REM we check if it exists before trying to run the code
 REG QUERY !REGKEY! > NUL 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
-    call :kill 1 "Registry key !REGKEY! not found"
-)
+	REM call :kill 1 "Registry key !REGKEY! not found"
+	call :colorecho "Registry key !REGKEY! not found" red black
+	call :pause "Press any key to select the game installation directory"
+	call :getfolder "Select game installation folder"
+	
+	IF [!getfolder!] EQU [] (
+		call :kill 1 "Folder selection cancelled"
+	)
+	set "AppPath=!getfolder!\"
+) ELSE (
+	REM fetches the data in the registry
+	for /f "tokens=2*" %%a in ('REG QUERY !REGKEY! /v BaseDir') do set "AppPath=%%~b\"
 
-REM checks if the game is running - https://stackoverflow.com/a/1329790
-tasklist /FI "WINDOWTITLE eq Blade & Soul" 2>NUL | find /I /N "Client.exe">NUL
-IF %ERRORLEVEL% EQU 0 (
-    call :kill 1 "Close the game before installing the Xigncode Bypasser"
-)
-
-REM fetches the data in the registry
-for /f "tokens=2*" %%a in ('REG QUERY !REGKEY! /v BaseDir') do set "AppPath=%%~b\"
-
-REM ready to replace everything
-echo This will install the XignCode Bypasser
-echo --------------------------------------------------------------------------------
-echo Game installation: !AppPath!
-IF NOT EXIST "!AppPath!*" (
-	call :kill 1 "!AppPath! doesn't exist or is empty"
-)
-echo Executing from: !CALLPATH!
-echo Detected !WIN_BITS! bit Windows installation
-call :pause "If you wish to continue, press any key. Otherwise, close this window."
-
-echo --------------------------------------------------------------------------------
-
-REM call the patching function
-for %%b in (32,64) do (
-	IF %%b LEQ !WIN_BITS! (
-		call :patch %%b
+	IF NOT EXIST "!AppPath!*" (
+		REM call :kill 1 "!AppPath! doesn't exist or is empty"
+		call :colorecho "!AppPath! does not exist or is empty" red black
+		call :pause "Press any key to select the game installation directory"
+		call :getfolder "Select game installation folder"
+		
+		IF [!getfolder!] EQU [] (
+			call :kill 1 "Folder selection cancelled"
+		)
+		set "AppPath=!getfolder!\"
 	)
 )
 
+:startpatch
+REM ready to replace everything
+cls
+call :colorecho "This will install the XignCode Bypasser" black gray
 echo --------------------------------------------------------------------------------
-echo The XignCode Bypasser was successfully installed!
+echo Game installation: !AppPath!
+echo Executing from: !CALLPATH!
+echo Detected !WIN_BITS! bit Windows installation
+echo --------------------------------------------------------------------------------
+
+:choice
+choice /c:qif /n /m "What to do next? [Q] Quit | [I] Install | [F] Select folder"
+
+IF ERRORLEVEL 3 (
+	REM [F] Select folder
+	call :getfolder "Select game installation folder"
+	
+	IF [!getfolder!] EQU [] (
+		call :colorecho "Folder selection canceled" darkyellow black
+		goto choice
+	) ELSE (
+		IF NOT EXIST "!getfolder!\*" (
+			call :colorecho "Folder is empty" red black
+			goto choice
+		) ELSE (
+			set "AppPath=!getfolder!\"
+			goto startpatch
+		)
+	)
+) ELSE (
+	IF ERRORLEVEL 2 (
+		REM [I] Install
+		echo --------------------------------------------------------------------------------
+		
+		REM call the patching function
+		for %%b in (32,64) do (
+			IF %%b LEQ !WIN_BITS! (
+				call :patch %%b
+			)
+		)
+		
+		echo --------------------------------------------------------------------------------
+		call :colorecho "The XignCode Bypasser was successfully installed!" darkgreen black
+	) ELSE (
+		REM [Q] Quit
+		echo --------------------------------------------------------------------------------
+		call :colorecho "You decided to quit" darkyellow black
+	)
+)
+
 call :kill 0 "More in http://bnsbuddy.com/ and https://www.reddit.com/r/BladeAndSoulMods/"
 
 REM FUNCTION DECLARATION!
 
 :getfolder
 REM fetches a folder path
+REM %1 = title
 setlocal EnableDelayedExpansion
-set "cmd="(new-object -COM 'Shell.Application').BrowseForFolder(0,'Please choose a folder.',0,0).self.path""
+
+set txt='Please choose a folder.'
+IF NOT [%1] EQU [] (
+	set txt=%1
+	set txt=!txt:"=!
+)
+
+REM executes the folder dialog - https://stackoverflow.com/a/15885133
+set "cmd="(new-object -COM 'Shell.Application').BrowseForFolder(0,'%txt%',0,0).self.path""
 for /f "usebackq delims=" %%I in (`powershell -NoProfile %cmd%`) do set "folder=%%I"
+
 endlocal & set "getfolder=%folder%"
 goto :eof
 
+:colorecho
+REM prints a message with specific colors
+REM %1 = message, %2 = text color, %3 = background color
+REM https://www.petri.com/change-powershell-console-font-and-background-colors
+powershell -NoProfile Write-Host %1 -ForegroundColor %2 -BackgroundColor %3
+
+goto :eof
+
+
 :pause
-setlocal EnableDelayedExpansion
 REM handles the pausing
+REM %1 = message
+setlocal EnableDelayedExpansion
+
 set a=%1
 echo !a:"=!
+
 pause >nul
+
 goto :eof
 
 :kill
-setlocal EnableDelayedExpansion
 REM creates the exit messages
+REM %1 = exit code, %2 = message
+setlocal EnableDelayedExpansion
+
 IF NOT [%2] EQU [] (
-	set a=%2
-	echo !a:"=!
+	IF %1 EQU 0 (
+		set a=%2
+		echo !a:"=!
+	) ELSE (
+		call :colorecho %2 red black
+	)
 )
-call :pause "Press any key to close."
+
+call :pause "Press any key to exit."
 exit %1
+
 goto :eof
 
 :patch
-setlocal EnableDelayedExpansion
 REM function to handle the patching
+REM %1 = bitness
+setlocal EnableDelayedExpansion
+
 set bits=%1
 set folder=!CALLPATH!!bits!\
 set dll=bsengine_Shipping
@@ -121,12 +206,13 @@ echo Folder !bits! found, copying files ...
 REM begin copying the directory
 xcopy "!folder!XignCode" "!target!\XignCode\" /i /s /q /y >nul 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
-    call :kill 1 "Error (%ERRORLEVEL%) while copying the folder !bits!\XignCode"
+	call :kill 1 "Error (%ERRORLEVEL%) while copying the folder !bits!\XignCode"
 )
 
 REM copy the dll file
 copy "!folder!!dll!.dll" "!target!\XignCode\!dll!.dll" /b /y >nul 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
-    call :kill 1 "Error (%ERRORLEVEL%) while copying the file !bits!\!dll!.dll"
+	call :kill 1 "Error (%ERRORLEVEL%) while copying the file !bits!\!dll!.dll"
 )
+
 goto :eof
