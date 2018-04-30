@@ -12,27 +12,27 @@ set REGKEY="HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\NCWest\BnS"
 
 REM needs administrator rights - https://stackoverflow.com/a/38856823
 REM we run net session to check the error returned
-net session > NUL 2>&1
+net session >nul 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
 	call :kill 1 "You need to execute as administrator"
 )
 
 REM detect the bitness and fixes values - https://superuser.com/a/268384
-echo %PROCESSOR_ARCHITECTURE% | find /i "x86" > nul
+echo %PROCESSOR_ARCHITECTURE% | find /i "x86" >nul
 IF %ERRORLEVEL% EQU 0 (
 	set WIN_BITS=32
 	set REGKEY="HKEY_LOCAL_MACHINE\SOFTWARE\NCWest\BnS"
 )
 
 REM checks if the game is running - https://stackoverflow.com/a/1329790
-tasklist /FI "WINDOWTITLE eq Blade & Soul" 2>NUL | find /I /N "Client.exe">NUL
+tasklist /FI "WINDOWTITLE eq Blade & Soul" 2>nul | find /I /N "Client.exe" >nul
 IF %ERRORLEVEL% EQU 0 (
 	call :kill 1 "Close the game before installing the Xigncode Bypasser"
 )
 
 REM this key is required - https://stackoverflow.com/a/445323
 REM we check if it exists before trying to run the code
-REG QUERY !REGKEY! > NUL 2>&1
+REG QUERY !REGKEY! >nul 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
 	REM call :kill 1 "Registry key !REGKEY! not found"
 	call :colorecho "Registry key !REGKEY! not found" red black
@@ -40,7 +40,7 @@ IF NOT %ERRORLEVEL% EQU 0 (
 	call :getfolder "Select game installation folder"
 	
 	IF [!getfolder!] EQU [] (
-		call :kill 1 "Folder selection cancelled"
+		call :kill 1 "Folder selection canceled"
 	)
 	set "AppPath=!getfolder!\"
 ) ELSE (
@@ -48,13 +48,12 @@ IF NOT %ERRORLEVEL% EQU 0 (
 	for /f "tokens=2*" %%a in ('REG QUERY !REGKEY! /v BaseDir') do set "AppPath=%%~b\"
 
 	IF NOT EXIST "!AppPath!*" (
-		REM call :kill 1 "!AppPath! doesn't exist or is empty"
 		call :colorecho "!AppPath! does not exist or is empty" red black
 		call :pause "Press any key to select the game installation directory"
 		call :getfolder "Select game installation folder"
 		
 		IF [!getfolder!] EQU [] (
-			call :kill 1 "Folder selection cancelled"
+			call :kill 1 "Folder selection canceled"
 		)
 		set "AppPath=!getfolder!\"
 	)
@@ -62,7 +61,9 @@ IF NOT %ERRORLEVEL% EQU 0 (
 
 :startpatch
 REM ready to replace everything
+
 cls
+
 call :colorecho "This will install the XignCode Bypasser" black gray
 echo --------------------------------------------------------------------------------
 echo Game installation: !AppPath!
@@ -106,13 +107,15 @@ IF ERRORLEVEL 3 (
 	) ELSE (
 		REM [Q] Quit
 		echo --------------------------------------------------------------------------------
-		call :colorecho "You decided to quit" darkyellow black
+		call :colorecho "You decided to quit the installer" darkyellow black
 	)
 )
 
 call :kill 0 "More in http://bnsbuddy.com/ and https://www.reddit.com/r/BladeAndSoulMods/"
 
+REM =====================
 REM FUNCTION DECLARATION!
+REM =====================
 
 :getfolder
 REM fetches a folder path
@@ -129,6 +132,10 @@ REM executes the folder dialog - https://stackoverflow.com/a/15885133
 set "cmd="(new-object -COM 'Shell.Application').BrowseForFolder(0,'%txt%',0,0).self.path""
 for /f "usebackq delims=" %%I in (`powershell -NoProfile %cmd%`) do set "folder=%%I"
 
+REM closest thing to a return
+REM since %folder% is expanded on compilation time
+REM 	it will have the correct value before endlocal
+REM 	has any effect, working as a "return"
 endlocal & set "getfolder=%folder%"
 goto :eof
 
