@@ -30,6 +30,13 @@ IF %ERRORLEVEL% EQU 0 (
 	call :kill 1 "Close the game before installing the Xigncode Bypasser"
 )
 
+set WIDTH=80
+for /f "tokens=1*" %%a in ('mode con') do (
+	IF "%%a" EQU "Columns:" (
+		set "WIDTH=%%b"
+	)
+)
+
 REM this key is required - https://stackoverflow.com/a/445323
 REM we check if it exists before trying to run the code
 REG QUERY !REGKEY! >nul 2>&1
@@ -65,11 +72,11 @@ REM ready to replace everything
 cls
 
 call :colorecho "This will install the XignCode Bypasser" black gray
-echo --------------------------------------------------------------------------------
+call :line
 echo Game installation: !AppPath!
 echo Executing from: !CALLPATH!
 echo Detected !WIN_BITS! bit Windows installation
-echo --------------------------------------------------------------------------------
+call :line
 
 :choice
 choice /c:qif /n /m "What to do next? [Q] Quit | [I] Install | [F] Select folder"
@@ -93,7 +100,7 @@ IF ERRORLEVEL 3 (
 ) ELSE (
 	IF ERRORLEVEL 2 (
 		REM [I] Install
-		echo --------------------------------------------------------------------------------
+		call :line
 		
 		REM call the patching function
 		for %%b in (32,64) do (
@@ -102,11 +109,11 @@ IF ERRORLEVEL 3 (
 			)
 		)
 		
-		echo --------------------------------------------------------------------------------
+		call :line
 		call :colorecho "The XignCode Bypasser was successfully installed!" darkgreen black
 	) ELSE (
 		REM [Q] Quit
-		echo --------------------------------------------------------------------------------
+		call :line
 		call :colorecho "You decided to quit the installer" darkyellow black
 	)
 )
@@ -116,6 +123,33 @@ call :kill 0 "More in http://bnsbuddy.com/ and https://www.reddit.com/r/BladeAnd
 REM =====================
 REM FUNCTION DECLARATION!
 REM =====================
+
+:line
+REM draws a line width the width of the console
+call :repeat - !WIDTH!
+echo %repeat%
+goto :eof
+
+:repeat
+setlocal EnableDelayedExpansion
+REM https://rosettacode.org/wiki/Repeat_a_string#Batch_File
+REM repeats a char n times
+REM %1 = char, %2 = times
+IF [%2] EQU [] (
+	REM closest thing to a return
+	REM explained below
+	endlocal & set "repeat="
+	goto :eof
+)
+set char=%1
+for /l %%i in (1,1,%2) do set res=!res!%char%
+
+REM since %res% is expanded on compilation time
+REM 	it will have the correct value before endlocal
+REM 	has any effect, working as a "return"
+endlocal & set "repeat=%res%"
+goto :eof
+
 
 :getfolder
 REM fetches a folder path
@@ -132,10 +166,6 @@ REM executes the folder dialog - https://stackoverflow.com/a/15885133
 set "cmd="(new-object -COM 'Shell.Application').BrowseForFolder(0,'%txt%',0,0).self.path""
 for /f "usebackq delims=" %%I in (`powershell -NoProfile %cmd%`) do set "folder=%%I"
 
-REM closest thing to a return
-REM since %folder% is expanded on compilation time
-REM 	it will have the correct value before endlocal
-REM 	has any effect, working as a "return"
 endlocal & set "getfolder=%folder%"
 goto :eof
 
