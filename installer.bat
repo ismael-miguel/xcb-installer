@@ -252,12 +252,15 @@ IF NOT EXIST "!folder!!dll!.dll" (
 echo Folder !bits! found, preparing to copy files ...
 
 IF EXIST "!target!\XignCode\!dll!.dll" (
-	fc /b "!folder!XignCode\*" "!target!\XignCode\!dll!.dll" >nul
+	fc /b "!folder!!dll!.dll" "!target!\XignCode\!dll!.dll" >nul
 	IF %ERRORLEVEL% EQU 0 (
-		call :colorecho "Seems like the bypasser was already installed." darkyellow black
-		choice /c:yn /n /m "Patch anyway? [Y] Yes | [N] No"
-		IF ERRORLEVEL 2 (
-			exit /b 1
+		fc /b "!folder!XignCode\x3.xem" "!target!\XignCode\x3.xem" >nul
+		IF %ERRORLEVEL% EQU 0 (
+			call :colorecho "The bypasser was already installed for !bits! bits." darkyellow black
+			choice /c:yn /n /m "Install anyway? [Y] Yes | [N] No"
+			IF ERRORLEVEL 2 (
+				exit /b 1
+			)
 		)
 	)
 )
@@ -269,6 +272,7 @@ call :colorecho . darkgreen black 1
 REM begin copying the directory
 xcopy "!folder!XignCode" "!target!\XignCode\" /i /s /q /y >nul 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
+	call :colorecho . darkred black
 	call :kill 1 "Error (%ERRORLEVEL%) while copying the folder !bits!\XignCode"
 )
 
@@ -277,6 +281,7 @@ call :colorecho . darkgreen black 1
 REM copy the dll file
 copy "!folder!!dll!.dll" "!target!\XignCode\!dll!.dll" /b /y >nul 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
+	call :colorecho . darkred black
 	call :kill 1 "Error (%ERRORLEVEL%) while copying the file !bits!\!dll!.dll"
 )
 
