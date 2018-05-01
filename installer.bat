@@ -106,6 +106,9 @@ IF ERRORLEVEL 3 (
 		for %%b in (32,64) do (
 			IF %%b LEQ !WIN_BITS! (
 				call :patch %%b
+				IF ERRORLEVEL 1 (
+					call :colorecho "Installation for !bits! bits was skipped" darkyellow black
+				)
 			)
 		)
 		
@@ -135,11 +138,12 @@ setlocal EnableDelayedExpansion
 REM https://rosettacode.org/wiki/Repeat_a_string#Batch_File
 REM repeats a char n times
 REM %1 = char, %2 = times
+REM exit: 1 = times missing
 IF [%2] EQU [] (
 	REM closest thing to a return
 	REM explained below
 	endlocal & set "repeat="
-	goto :eof
+	exit /b 1
 )
 set char=%1
 for /l %%i in (1,1,%2) do set res=!res!%char%
@@ -171,9 +175,15 @@ goto :eof
 
 :colorecho
 REM prints a message with specific colors
-REM %1 = message, %2 = text color, %3 = background color
+REM %1 = message, %2 = text color, %3 = background color, %4 = same line?
 REM https://www.petri.com/change-powershell-console-font-and-background-colors
-powershell -NoProfile Write-Host %1 -ForegroundColor %2 -BackgroundColor %3
+setlocal EnableDelayedExpansion
+
+IF NOT [%4] EQU [] (
+	set sameline=-NoNewline
+)
+
+powershell -NoProfile Write-Host %1 -ForegroundColor %2 -BackgroundColor %3 !sameline!
 
 goto :eof
 
@@ -212,6 +222,7 @@ goto :eof
 :patch
 REM function to handle the patching
 REM %1 = bitness
+REM exit: 1 = skipped
 setlocal EnableDelayedExpansion
 
 set bits=%1
@@ -238,7 +249,22 @@ IF NOT EXIST "!folder!!dll!.dll" (
 	call :kill 1 "File !bits!\!dll!.dll doesn't exist"
 )
 
-echo Folder !bits! found, copying files ...
+echo Folder !bits! found, preparing to copy files ...
+
+IF EXIST "!target!\XignCode\!dll!.dll" (
+	fc /b "!folder!XignCode\*" "!target!\XignCode\!dll!.dll" >nul
+	IF %ERRORLEVEL% EQU 0 (
+		call :colorecho "Seems like the bypasser was already installed." darkyellow black
+		choice /c:yn /n /m "Patch anyway? [Y] Yes | [N] No"
+		IF ERRORLEVEL 2 (
+			exit /b 1
+		)
+	)
+)
+
+REM hacky way to echo without a new line
+echo | set /P ="Copying files "
+call :colorecho . darkgreen black 1
 
 REM begin copying the directory
 xcopy "!folder!XignCode" "!target!\XignCode\" /i /s /q /y >nul 2>&1
@@ -246,10 +272,14 @@ IF NOT %ERRORLEVEL% EQU 0 (
 	call :kill 1 "Error (%ERRORLEVEL%) while copying the folder !bits!\XignCode"
 )
 
+call :colorecho . darkgreen black 1
+
 REM copy the dll file
 copy "!folder!!dll!.dll" "!target!\XignCode\!dll!.dll" /b /y >nul 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
 	call :kill 1 "Error (%ERRORLEVEL%) while copying the file !bits!\!dll!.dll"
 )
+
+call :colorecho . darkgreen black
 
 goto :eof
