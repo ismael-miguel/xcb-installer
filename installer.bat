@@ -107,7 +107,7 @@ IF ERRORLEVEL 3 (
 			IF %%b LEQ !WIN_BITS! (
 				call :patch %%b
 				IF ERRORLEVEL 1 (
-					call :colorecho "Installation for !bits! bits was skipped" darkyellow black
+					call :colorecho "Installation for %%b bits was skipped" darkyellow black
 				)
 			)
 		)
@@ -129,16 +129,17 @@ REM =====================
 
 :line
 REM draws a line width the width of the console
-call :repeat - !WIDTH!
+call :repeat _ !WIDTH!
 echo %repeat%
 goto :eof
 
 :repeat
-setlocal EnableDelayedExpansion
 REM https://rosettacode.org/wiki/Repeat_a_string#Batch_File
 REM repeats a char n times
 REM %1 = char, %2 = times
 REM exit: 1 = times missing
+setlocal EnableDelayedExpansion
+
 IF [%2] EQU [] (
 	REM closest thing to a return
 	REM explained below
@@ -175,15 +176,11 @@ goto :eof
 
 :colorecho
 REM prints a message with specific colors
-REM %1 = message, %2 = text color, %3 = background color, %4 = same line?
+REM %1 = message, %2 = text color, %3 = background color, %4 = extra arguments (like -NoNewline)
 REM https://www.petri.com/change-powershell-console-font-and-background-colors
 setlocal EnableDelayedExpansion
 
-IF NOT [%4] EQU [] (
-	set sameline=-NoNewline
-)
-
-powershell -NoProfile Write-Host %1 -ForegroundColor %2 -BackgroundColor %3 !sameline!
+powershell -NoProfile Write-Host %1 -ForegroundColor %2 -BackgroundColor %3 %4
 
 goto :eof
 
@@ -251,11 +248,16 @@ IF NOT EXIST "!folder!!dll!.dll" (
 
 echo Folder !bits! found, preparing to copy files ...
 
+REM verifying if the bypasser was already installed may save work
+REM step 1 - verify if the dll exists
 IF EXIST "!target!\XignCode\!dll!.dll" (
+	REM step 2 - compare if they are the same. if they are ...
 	fc /b "!folder!!dll!.dll" "!target!\XignCode\!dll!.dll" >nul
 	IF %ERRORLEVEL% EQU 0 (
+		REM step 3 - check if the x3.xem file is the same (original one is different)
 		fc /b "!folder!XignCode\x3.xem" "!target!\XignCode\x3.xem" >nul
 		IF %ERRORLEVEL% EQU 0 (
+			REM step 4 - faily certain it's already installed, ask user input
 			call :colorecho "The bypasser was already installed for !bits! bits." darkyellow black
 			choice /c:yn /n /m "Install anyway? [Y] Yes | [N] No"
 			IF ERRORLEVEL 2 (
@@ -267,7 +269,7 @@ IF EXIST "!target!\XignCode\!dll!.dll" (
 
 REM hacky way to echo without a new line
 echo | set /P ="Copying files "
-call :colorecho . darkgreen black 1
+call :colorecho . darkgreen black -NoNewline
 
 REM begin copying the directory
 xcopy "!folder!XignCode" "!target!\XignCode\" /i /s /q /y >nul 2>&1
@@ -276,7 +278,7 @@ IF NOT %ERRORLEVEL% EQU 0 (
 	call :kill 1 "Error (%ERRORLEVEL%) while copying the folder !bits!\XignCode"
 )
 
-call :colorecho . darkgreen black 1
+call :colorecho . darkgreen black -NoNewline
 
 REM copy the dll file
 copy "!folder!!dll!.dll" "!target!\XignCode\!dll!.dll" /b /y >nul 2>&1
