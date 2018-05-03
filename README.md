@@ -12,13 +12,13 @@ Since this copies the files (instead of moving), applying the XignCode Bypasser 
 
 ## How to use?
 
-1. Download the XignCode Bypasser (skip to step 3 if you alreade have the files extracted)
+1. Download the XignCode Bypasser
     (Available in the BnS Buddy Discord server, in the `#download` channel)
-2. Extract the compressed file
-3. Place the `install.bat` file in the extracted folder
-    Placing the file anywhere else **won't work**!
+2. Download the `install.bat` file
+3. (Optional, but recommended) Place the `install.bat` file inside the Xigncode Bypasser folder
 4. Right-click and click on "Run as Administrator" (or similar for your language)
-5. Enjoy the game!
+5. If you skipped step 3, press E to extract a ZIP file or B to select the Xigncode Bypasser folder
+6. Enjoy the game!
 
 ## How to revert?
 
