@@ -7,6 +7,7 @@ color 07
 REM config
 setlocal EnableDelayedExpansion
 set CALLPATH=%~dp0
+set FILESPATH=!CALLPATH!
 set WIN_BITS=64
 set REGKEY="HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\NCWest\BnS"
 
@@ -74,50 +75,71 @@ cls
 call :colorecho "This will install the XignCode Bypasser" black gray
 call :line
 echo Game installation: !AppPath!
-echo Executing from: !CALLPATH!
+echo Files in: !FILESPATH!
 echo Detected !WIN_BITS! bit Windows installation
 call :line
 
 :choice
-choice /c:qif /n /m "What to do next? [Q] Quit | [I] Install | [F] Select folder"
+echo What to do next?
+choice /c:qife /n /m "[Q] Quit | [I] Install | [F] Select folder | [E] Extract ZIP"
 
-IF ERRORLEVEL 3 (
-	REM [F] Select folder
-	call :getfolder "Select game installation folder"
-	
-	IF [!getfolder!] EQU [] (
-		call :colorecho "Folder selection canceled" darkyellow black
+IF ERRORLEVEL 4 (
+	REM [E] Select folder
+	call :zipfile "!CALLPATH!"
+	IF ERRORLEVEL 255 (
+		call :colorecho "No suitable extraction program found" darkred black
 		goto choice
-	) ELSE (
-		IF NOT EXIST "!getfolder!\*" (
-			call :colorecho "Folder is empty" red black
-			goto choice
-		) ELSE (
-			set "AppPath=!getfolder!\"
-			goto startpatch
-		)
+	)
+	IF ERRORLEVEL 2 (
+		goto choice
+	)
+	IF ERRORLEVEL 1 (
+		call :colorecho "File selection canceled" darkyellow black
+		goto choice
+	)
+	IF ERRORLEVEL 0 (
+		set FILESPATH=!zipfile!
+		goto startpatch
 	)
 ) ELSE (
-	IF ERRORLEVEL 2 (
-		REM [I] Install
-		call :line
+	IF ERRORLEVEL 3 (
+		REM [F] Select folder
+		call :getfolder "Select game installation folder"
 		
-		REM call the patching function
-		for %%b in (32,64) do (
-			IF %%b LEQ !WIN_BITS! (
-				call :patch %%b
-				IF ERRORLEVEL 1 (
-					call :colorecho "Installation for %%b bits was skipped" darkyellow black
-				)
+		IF [!getfolder!] EQU [] (
+			call :colorecho "Folder selection canceled" darkyellow black
+			goto choice
+		) ELSE (
+			IF NOT EXIST "!getfolder!\*" (
+				call :colorecho "Folder is empty" red black
+				goto choice
+			) ELSE (
+				set "AppPath=!getfolder!\"
+				goto startpatch
 			)
 		)
-		
-		call :line
-		call :colorecho "The XignCode Bypasser was successfully installed!" darkgreen black
 	) ELSE (
-		REM [Q] Quit
-		call :line
-		call :colorecho "You decided to quit the installer" darkyellow black
+		IF ERRORLEVEL 2 (
+			REM [I] Install
+			call :line
+			
+			REM call the patching function
+			for %%b in (32,64) do (
+				IF %%b LEQ !WIN_BITS! (
+					call :patch %%b
+					IF ERRORLEVEL 1 (
+						call :colorecho "Installation for %%b bits was skipped" darkyellow black
+					)
+				)
+			)
+			
+			call :line
+			call :colorecho "The XignCode Bypasser was successfully installed!" darkgreen black
+		) ELSE (
+			REM [Q] Quit
+			call :line
+			call :colorecho "You decided to quit the installer" darkyellow black
+		)
 	)
 )
 
@@ -169,7 +191,7 @@ IF NOT [%1] EQU [] (
 
 REM executes the folder dialog - https://stackoverflow.com/a/15885133
 set "cmd="(new-object -COM 'Shell.Application').BrowseForFolder(0,'%txt%',0,0).self.path""
-for /f "usebackq delims=" %%I in (`powershell -NoProfile %cmd%`) do set "folder=%%I"
+for /f "usebackq delims=" %%I in (`powershell -NoProfile -Noninteractive -NoLogo %cmd%`) do set "folder=%%I"
 
 endlocal & set "getfolder=%folder%"
 goto :eof
@@ -180,7 +202,7 @@ REM %1 = message, %2 = text color, %3 = background color, %4 = extra arguments (
 REM https://www.petri.com/change-powershell-console-font-and-background-colors
 setlocal EnableDelayedExpansion
 
-powershell -NoProfile Write-Host %1 -ForegroundColor %2 -BackgroundColor %3 %4
+powershell -NoProfile -Noninteractive -NoLogo Write-Host %1 -ForegroundColor %2 -BackgroundColor %3 %4
 
 goto :eof
 
@@ -223,7 +245,7 @@ REM exit: 1 = skipped
 setlocal EnableDelayedExpansion
 
 set bits=%1
-set folder=!CALLPATH!!bits!\
+set folder=!FILESPATH!!bits!\
 set dll=bsengine_Shipping
 set target=!AppPath!\bin
 
@@ -290,3 +312,82 @@ IF NOT %ERRORLEVEL% EQU 0 (
 call :colorecho . darkgreen black
 
 goto :eof
+
+:zipfile
+REM opens a file dialog that allows to choose the zip file
+REM 	also "returns" the path where the folder is when done
+REM %1 = optional target for extraction
+REM exit: 0 = extracted, 1 = skipped, 2 = failed
+setlocal EnableDelayedExpansion
+
+REM https://stackoverflow.com/a/50115044
+set cmd=powershell -NoProfile -Noninteractive -NoLogo -command "&{[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms') | Out-Null;$F = New-Object System.Windows.Forms.OpenFileDialog; $F.filter = 'ZIP Archive (*.zip)| *.zip'; $F.ShowDialog()|out-null; $F.FileName}"
+
+for /f "delims=" %%i in ('!cmd!') do (
+	set filedrive=%%~di
+	set filepath=%%~pi
+	set filename=%%~ni
+	set fileext=%%~xi
+)
+
+IF "!filedrive!!filepath!!filename!!fileext!" EQU "" (
+	endlocal & exit /b 1
+)
+
+set "folder=!filedrive!!filepath!"
+set "file=!filename!!fileext!"
+
+set target=%~dp1
+IF "!target!" EQU "" (
+	SET target=%TEMP%\
+)
+
+set code=255
+
+REM UNTESTED!!! CAN'T TEST THIS!
+REM https://stackoverflow.com/q/1825585
+set psv=powershell -NoProfile -Noninteractive -NoLogo -command "$psversiontable.PSVersion.Major"
+for /f "tokens=1" %%i in ('!psv!') do (
+	IF %%i GEQ 5 (
+		echo Using Powershell version %%i to extact
+		REM https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.archive/expand-archive?view=powershell-6
+		powershell -NoProfile -Noninteractive -NoLogo Expand-Archive "!folder!!file!" "!target!!filename!" >nul
+		IF NOT %ERRORLEVEL% EQU 0 (
+			call :colorecho "Failed to extract: error %ERRORLEVEL%" red black
+			set code=2
+		) ELSE (
+			endlocal & set "zipfile=%target%%filename%\"
+			exit /b 0
+		)
+	)
+)
+
+REM https://stackoverflow.com/q/14122732
+IF EXIST "%ProgramFiles%\7-Zip\7z.exe" (
+	echo Using 7-Zip to extact
+	"%ProgramFiles%\7-Zip\7z.exe" x "!folder!!file!" -bd -y -o"!target!!filename!\" >nul
+	IF NOT %ERRORLEVEL% EQU 0 (
+		call :colorecho "Failed to extract: error %ERRORLEVEL%" red black
+		set code=2
+	) ELSE (
+		endlocal & set "zipfile=%target%%filename%\"
+		exit /b 0
+	)
+)
+
+REM UNTESTED!!! CAN'T TEST THIS!
+REM https://stackoverflow.com/a/19337595
+IF EXIST "%ProgramFiles%\WinRAR\winrar.exe" (
+	echo Using WinRAR to extact
+	"%ProgramFiles%\WinRAR\winrar.exe" x -ibck "!folder!!file!" *.* "!target!!filename!\" >nul
+	IF NOT %ERRORLEVEL% EQU 0 (
+		call :colorecho "Failed to extract: error %ERRORLEVEL%" red black
+		set code=2
+	) ELSE (
+		endlocal & set "zipfile=%target%%filename%\"
+		exit /b 0
+	)
+)
+
+endlocal & set "zipfile="
+exit /b !code!
