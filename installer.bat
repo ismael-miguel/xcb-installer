@@ -81,64 +81,84 @@ call :line
 
 :choice
 echo What to do next?
-choice /c:qife /n /m "[Q] Quit | [I] Install | [F] Select folder | [E] Extract ZIP"
+choice /c:qigeb /n /m "[Q]uit | [I]nstall | [G]ame folder | [B]ypasser folder | [E]xtract ZIP"
 
-IF ERRORLEVEL 4 (
-	REM [E] Select folder
-	call :zipfile "!CALLPATH!"
-	IF ERRORLEVEL 255 (
-		call :colorecho "No suitable extraction program found" darkred black
+IF ERRORLEVEL 5 (
+	REM [B]ypasser folder
+	
+	call :getfolder "Select XignCode Bypasser folder"
+	
+	IF [!getfolder!] EQU [] (
+		call :colorecho "Folder selection canceled" darkyellow black
 		goto choice
-	)
-	IF ERRORLEVEL 2 (
-		goto choice
-	)
-	IF ERRORLEVEL 1 (
-		call :colorecho "File selection canceled" darkyellow black
-		goto choice
-	)
-	IF ERRORLEVEL 0 (
-		set FILESPATH=!zipfile!
-		goto startpatch
-	)
-) ELSE (
-	IF ERRORLEVEL 3 (
-		REM [F] Select folder
-		call :getfolder "Select game installation folder"
-		
-		IF [!getfolder!] EQU [] (
-			call :colorecho "Folder selection canceled" darkyellow black
+	) ELSE (
+		IF NOT EXIST "!getfolder!\*" (
+			call :colorecho "Folder is empty" red black
 			goto choice
 		) ELSE (
-			IF NOT EXIST "!getfolder!\*" (
-				call :colorecho "Folder is empty" red black
-				goto choice
-			) ELSE (
-				set "AppPath=!getfolder!\"
-				goto startpatch
-			)
+			set "FILESPATH=!getfolder!\"
+			goto startpatch
+		)
+	)
+	
+) ELSE (
+	IF ERRORLEVEL 4 (
+		REM [E]xtract ZIP
+		call :zipfile "!CALLPATH!"
+		IF ERRORLEVEL 255 (
+			call :colorecho "No suitable extraction program found" darkred black
+			goto choice
+		)
+		IF ERRORLEVEL 2 (
+			goto choice
+		)
+		IF ERRORLEVEL 1 (
+			call :colorecho "File selection canceled" darkyellow black
+			goto choice
+		)
+		IF ERRORLEVEL 0 (
+			set FILESPATH=!zipfile!
+			goto startpatch
 		)
 	) ELSE (
-		IF ERRORLEVEL 2 (
-			REM [I] Install
-			call :line
+		IF ERRORLEVEL 3 (
+			REM [G]ame folder
+			call :getfolder "Select game installation folder"
 			
-			REM call the patching function
-			for %%b in (32,64) do (
-				IF %%b LEQ !WIN_BITS! (
-					call :patch %%b
-					IF ERRORLEVEL 1 (
-						call :colorecho "Installation for %%b bits was skipped" darkyellow black
-					)
+			IF [!getfolder!] EQU [] (
+				call :colorecho "Folder selection canceled" darkyellow black
+				goto choice
+			) ELSE (
+				IF NOT EXIST "!getfolder!\*" (
+					call :colorecho "Folder is empty" red black
+					goto choice
+				) ELSE (
+					set "AppPath=!getfolder!\"
+					goto startpatch
 				)
 			)
-			
-			call :line
-			call :colorecho "The XignCode Bypasser was successfully installed!" darkgreen black
 		) ELSE (
-			REM [Q] Quit
-			call :line
-			call :colorecho "You decided to quit the installer" darkyellow black
+			IF ERRORLEVEL 2 (
+				REM [I]nstall
+				call :line
+				
+				REM call the patching function
+				for %%b in (32,64) do (
+					IF %%b LEQ !WIN_BITS! (
+						call :patch %%b
+						IF ERRORLEVEL 1 (
+							call :colorecho "Installation for %%b bits was skipped" darkyellow black
+						)
+					)
+				)
+				
+				call :line
+				call :colorecho "The XignCode Bypasser was successfully installed!" darkgreen black
+			) ELSE (
+				REM [Q]uit
+				call :line
+				call :colorecho "You decided to quit the installer" darkyellow black
+			)
 		)
 	)
 )
@@ -257,15 +277,15 @@ IF NOT !bits! EQU 32 (
 
 REM make sure the folder with the contents exist
 IF NOT EXIST "!folder!*" (
-	call :kill 1 "Folder !bits! doesn't exist or is empty"
+	call :kill 1 "Folder !bits! does not exist or is empty"
 )
 
 REM it exists, confirm the remaining
 IF NOT EXIST "!folder!XignCode\*" (
-	call :kill 1 "Folder !bits!\XignCode doesn't exist or is empty"
+	call :kill 1 "Folder !bits!\XignCode does not exist or is empty"
 )
 IF NOT EXIST "!folder!!dll!.dll" (
-	call :kill 1 "File !bits!\!dll!.dll doesn't exist"
+	call :kill 1 "File !bits!\!dll!.dll does not exist"
 )
 
 echo Folder !bits! found, preparing to copy files ...
@@ -321,7 +341,8 @@ REM exit: 0 = extracted, 1 = skipped, 2 = failed
 setlocal EnableDelayedExpansion
 
 REM https://stackoverflow.com/a/50115044
-set cmd=powershell -NoProfile -Noninteractive -NoLogo -command "&{[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms') | Out-Null;$F = New-Object System.Windows.Forms.OpenFileDialog; $F.filter = 'ZIP Archive (*.zip)| *.zip'; $F.ShowDialog()|out-null; $F.FileName}"
+REM fix for dialog not showing: https://stackoverflow.com/q/216710
+set cmd=powershell -NoProfile -Noninteractive -NoLogo -command "&{[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms')|Out-Null; $F = New-Object System.Windows.Forms.OpenFileDialog; $F.ShowHelp = $true; $F.filter = 'ZIP Archive (*.zip)| *.zip'; $F.ShowDialog()|Out-Null; $F.FileName}"
 
 for /f "delims=" %%i in ('!cmd!') do (
 	set filedrive=%%~di
@@ -389,5 +410,4 @@ IF EXIST "%ProgramFiles%\WinRAR\winrar.exe" (
 	)
 )
 
-endlocal & set "zipfile="
 exit /b !code!
