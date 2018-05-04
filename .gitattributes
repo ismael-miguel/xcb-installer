@@ -1,3 +1,4 @@
-#https://help.github.com/articles/dealing-with-line-endings/
+# https://help.github.com/articles/dealing-with-line-endings/
+# https://stackoverflow.com/questions/170961/whats-the-best-crlf-carriage-return-line-feed-handling-strategy-with-git
 *.cmd text eol=crlf
 *.bat text eol=crlf
