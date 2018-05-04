@@ -71,7 +71,6 @@ IF NOT %ERRORLEVEL% EQU 0 (
 REM ready to replace everything
 
 cls
-
 call :colorecho "This will install the XignCode Bypasser" black gray
 call :line
 echo Game installation: !AppPath!
