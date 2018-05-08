@@ -395,7 +395,6 @@ IF EXIST "%ProgramFiles%\7-Zip\7z.exe" (
 	)
 )
 
-REM UNTESTED!!! CAN'T TEST THIS!
 REM https://stackoverflow.com/a/19337595
 IF EXIST "%ProgramFiles%\WinRAR\winrar.exe" (
 	echo Using WinRAR to extact
