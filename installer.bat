@@ -11,9 +11,9 @@ set FILESPATH=!CALLPATH!
 set WIN_BITS=64
 set REGKEY="HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\NCWest\BnS"
 
-REM needs administrator rights - https://stackoverflow.com/a/38856823
-REM we run net session to check the error returned
-net session >nul 2>&1
+REM needs administrator rights - https://stackoverflow.com/a/21295806
+REM we run fsutil to check the error code. 0 = admin
+fsutil dirty query %SystemDrive% >nul 2>&1
 IF NOT %ERRORLEVEL% EQU 0 (
 	call :kill 1 "You need to execute as administrator"
 )
